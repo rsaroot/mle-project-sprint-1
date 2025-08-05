@@ -2,7 +2,7 @@ from airflow.providers.postgres.hooks.postgres import PostgresHook
 import pandas as pd
 from sqlalchemy import (Table, Column, Integer,
                         Float, String, Boolean, DateTime,
-                        MetaData, UniqueConstraint, ForeignKey)
+                        MetaData, UniqueConstraint)
 from sqlalchemy import inspect
 
 def create_table(**kwargs):
