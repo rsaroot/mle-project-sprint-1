@@ -1,12 +1,11 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
-from datetime import datetime
 import pendulum
-from steps.churn import create_table, extract_data, load_data
+from steps.clean_churn import create_table, extract_data, transform_data, load_data
 from steps.messages import send_success_message, send_failure_message
 
 with DAG(
-    dag_id='part1_airflow',
+    dag_id='flats_clean',
     start_date=pendulum.datetime(2023, 1, 1, tz="UTC"),
     schedule_interval='@once',
     catchup=False,
@@ -15,7 +14,7 @@ with DAG(
         'depends_on_past': False,
         'retries': 1,
     },
-    tags=['project-1', 'etl'],
+    tags=['project-1', 'etl', 'clean'],
     on_success_callback=send_success_message,
     on_failure_callback=send_failure_message
 ) as dag:
@@ -23,7 +22,7 @@ with DAG(
     create_table_task = PythonOperator(
         task_id='create_table',
         python_callable=create_table,
-        op_kwargs={'table_name': 'flats_with_b_features'}
+        op_kwargs={'table_name': 'flats_with_b_features_clean'}
     )
 
     extract_data_task = PythonOperator(
@@ -31,10 +30,15 @@ with DAG(
         python_callable=extract_data
     )
 
+    transform_data_task = PythonOperator(
+        task_id='transform_data',
+        python_callable=transform_data
+    )
+
     load_data_task = PythonOperator(
         task_id='load_data',
         python_callable=load_data,
-        op_kwargs={'table_name': 'flats_with_b_features'}
+        op_kwargs={'table_name': 'flats_with_b_features_clean'}
     )
 
-    create_table_task >> extract_data_task >> load_data_task
+    create_table_task >> extract_data_task >> transform_data_task >> load_data_task

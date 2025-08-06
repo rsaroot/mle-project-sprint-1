@@ -6,7 +6,7 @@ from sqlalchemy import (Table, Column, Integer,
 from sqlalchemy import inspect
 
 def create_table(**kwargs):
-    table_name = kwargs.get('table_name', 'flats_with_b_features')
+    table_name = kwargs.get('table_name', 'flats_with_b_features_cleab')
     hook = PostgresHook('destination_db')
     engine = hook.get_sqlalchemy_engine()
     metadata = MetaData()
@@ -51,26 +51,8 @@ def extract_data(**kwargs):
     conn = hook.get_conn()
     
     sql = """
-    SELECT 
-        f.id AS flat_id,
-        f.floor,
-        f.kitchen_area,
-        f.living_area,
-        f.rooms,
-        f.is_apartment,
-        f.studio,
-        f.total_area,
-        f.price,
-        b.build_year,
-        b.building_type_int,
-        b.latitude,
-        b.longitude,
-        b.ceiling_height,
-        b.flats_count,
-        b.floors_total,
-        b.has_elevator
-    FROM flats f
-    JOIN buildings b ON f.building_id = b.id
+    SELECT *
+    FROM flats_with_b_features
     """
     
     data = pd.read_sql(sql, conn)
@@ -78,10 +60,39 @@ def extract_data(**kwargs):
     
     ti.xcom_push(key='extracted_data', value=data)
 
+def transform_data(**kwargs):
+
+    ti = kwargs["ti"]
+    data = ti.xcom_pull(task_ids='extract_data', key='extracted_data')
+
+    # Дубликаты
+    feature_cols = data.columns.drop(['id', 'flat_id']).tolist()
+    is_duplicated_features = data.duplicated(subset=feature_cols, keep=False)
+    data = data[~is_duplicated_features].reset_index(drop=True)
+
+    # Выбросы
+    num_cols = data[feature_cols].select_dtypes(['float', 'int']).columns
+    threshold = 1.5
+    potential_outliers = pd.DataFrame()
+
+    for col in num_cols:
+        quartile_1 = data[col].quantile(0.25)
+        quartile_3 = data[col].quantile(0.75)
+        iq_range = quartile_3 - quartile_1
+        margin = threshold * iq_range
+        lower = quartile_1 - margin
+        upper = quartile_3 + margin
+        potential_outliers[col] = ~data[col].between(lower, upper)
+
+    outliers = potential_outliers.any(axis=1)
+    data = data[~outliers]
+
+    ti.xcom_push('transformed_data', data)
+
 def load_data(**kwargs):
     ti = kwargs['ti']
-    table_name = kwargs.get('table_name', 'flats_with_b_features')
-    data = ti.xcom_pull(task_ids='extract_data', key='extracted_data')
+    table_name = kwargs.get('table_name', 'flats_with_b_features_clean')
+    data = ti.xcom_pull(task_ids='transform_data', key='transformed_data')
     hook = PostgresHook('destination_db')
     hook.insert_rows(
         table=table_name,
