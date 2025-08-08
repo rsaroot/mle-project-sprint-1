@@ -1,0 +1,10 @@
+index_col: 'flat_id'
+target_col: 'price'
+cols_to_drop: ['id']
+binary_drop: 'if_binary'
+cat_drop: 'first'
+n_splits: 5
+metrics: ['neg_mean_absolute_error', 'r2', 'neg_root_mean_squared_error']
+n_jobs: -1
+shuffle: True
+random_state: 42
