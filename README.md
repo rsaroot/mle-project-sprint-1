@@ -11,9 +11,9 @@
 
 Описание решения:
 
-S3 bucket: `s3-student-mle-20250617-af41a9cf8f-freetrack`
+db host: `rc1b-uh7kdmcx67eomesf.mdb.yandexcloud.net` - тут лежат результаты airflow
 
-db host: `rc1b-uh7kdmcx67eomesf.mdb.yandexcloud.net`
+S3 bucket: `s3-student-mle-20250617-af41a9cf8f-freetrack` - тут лежат результаты dvc
 
 Папка `part1_airlfow`:
 - `/dags`: содержит 2 пайплайна airflow:
