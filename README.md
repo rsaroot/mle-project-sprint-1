@@ -28,7 +28,7 @@ db host: `rc1b-uh7kdmcx67eomesf.mdb.yandexcloud.net`
 Папка `part2_dvc`:
 - `dvc.yaml`: описание шагов dvc пайплайна
 - `params.yaml`: гиперпараметры
-- `/scripts`: содердит описание шагов dvc пайплайна
+- `/scripts`: содержит описание шагов dvc пайплайна
     - `data.py` - получение данных (результат - `\data\initial_data.scv`)
     - `fit.py` - получение обученой модели (результат - `\models\fitted_model.pkl`)
     - `evaluate.py` - кросс-валидация полученной модели и сохранение результатов (`\сv_results\cv_res.json`)
